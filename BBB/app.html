@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Parcel — Comps & Underwriting</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg-grad-1: #e7f2fb;
+    --bg-grad-2: #d6f1ee;
+    --bg-grad-3: #eaf6ff;
+    --ink-900: #0b1a2b;
+    --ink-700: #1f3349;
+    --ink-500: #51647a;
+    --ink-400: #7a8a9d;
+    --ink-300: #a8b5c5;
+    --ink-200: #d6dde6;
+    --ink-100: #eef2f7;
+    --ink-50:  #f6f9fc;
+    --paper:   #ffffff;
+    --green-700: #047857;
+    --green-600: #059669;
+    --green-100: #d1fae5;
+    --green-50:  #ecfdf5;
+    --red-600:  #dc2626;
+    --red-100:  #fee2e2;
+    --red-50:   #fef2f2;
+    --blue-700: #1d4ed8;
+    --blue-600: #2563eb;
+    --blue-100: #dbeafe;
+    --blue-50:  #eff6ff;
+    --amber-700:#b45309;
+    --amber-100:#fef3c7;
+    --amber-50: #fffbeb;
+    --violet-100:#ede9fe;
+    --violet-700:#6d28d9;
+    --shadow-sm: 0 1px 2px rgba(15, 30, 50, .06);
+    --shadow-md: 0 4px 12px rgba(15, 30, 50, .08), 0 1px 2px rgba(15,30,50,.04);
+    --shadow-lg: 0 12px 32px rgba(15, 30, 50, .12), 0 2px 6px rgba(15,30,50,.06);
+    --radius-sm: 6px;
+    --radius:    10px;
+    --radius-lg: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--ink-900);
+    background:
+      radial-gradient(1200px 600px at 0% -10%, #cfe7f7 0%, transparent 60%),
+      radial-gradient(1100px 700px at 100% 0%, #cef0eb 0%, transparent 55%),
+      linear-gradient(180deg, #eaf4fb 0%, #f4f8fb 100%);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  .num, .tabular { font-variant-numeric: tabular-nums; }
+  .serif { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; letter-spacing: -0.01em; }
+  .mono  { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  button { font-family: inherit; }
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #cfd7e0; border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
+  ::-webkit-scrollbar-thumb:hover { background: #b3bdca; background-clip: padding-box; border: 2px solid transparent; }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  /* density */
+  body[data-density="compact"] { --row-y: 8px; --card-pad: 12px; --gap: 10px; --fs-body: 13px; }
+  body[data-density="comfortable"] { --row-y: 14px; --card-pad: 18px; --gap: 14px; --fs-body: 14px; }
+  body { font-size: var(--fs-body, 14px); }
+
+  /* tooltip */
+  [data-tip] { position: relative; }
+  [data-tip]:hover::after {
+    content: attr(data-tip);
+    position: absolute; z-index: 50; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+    background: #0b1a2b; color: #fff; font-size: 12px; padding: 6px 9px; border-radius: 6px; white-space: nowrap;
+    box-shadow: var(--shadow-md);
+  }
+  [data-tip]:hover::before {
+    content: ''; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+    border: 5px solid transparent; border-top-color: #0b1a2b; z-index: 50;
+  }
+</style>
+
+<script type="application/json" id="speaker-notes">[]</script>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body data-density="comfortable">
+
+<div id="root"></div>
+
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="data.jsx"></script>
+<script type="text/babel" src="ui.jsx"></script>
+<script type="text/babel" src="map.jsx"></script>
+<script type="text/babel" src="comps.jsx"></script>
+<script type="text/babel" src="subject.jsx"></script>
+<script type="text/babel" src="repairs.jsx"></script>
+<script type="text/babel" src="deal.jsx"></script>
+<script type="text/babel" src="app.jsx"></script>
+
+</body>
+</html>
