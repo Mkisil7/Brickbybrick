@@ -13,6 +13,7 @@ function App() {
   const [tweaksOpen, setTweaksOpen] = useState(false);
 
   const [comps, setComps] = useState(window.COMPS);
+  const [subject, setSubject] = useState(window.SUBJECT);
   const [hoveredId, setHoveredId] = useState(null);
   const [focusedId, setFocusedId] = useState('c1');
   const [view, setView] = useState('split'); // split | grid | table
@@ -22,6 +23,26 @@ function App() {
   const [repairs, setRepairsState] = useState(window.REPAIRS);
   const [analysisMode, setAnalysisMode] = useState('arv'); // arv | cmv | rent
   const [offerOpen, setOfferOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [dataStatus, setDataStatus] = useState(window.DATA_STATUS || { loading: false, source: 'mock', error: null });
+
+  // Re-pull from window globals whenever data.jsx fires bbb:datachanged.
+  useEffect(() => {
+    const handler = () => {
+      setSubject(window.SUBJECT);
+      setComps(window.COMPS);
+      setRepairsState(window.REPAIRS);
+      setDataStatus(window.DATA_STATUS || { loading: false, source: 'mock', error: null });
+    };
+    window.addEventListener('bbb:datachanged', handler);
+    return () => window.removeEventListener('bbb:datachanged', handler);
+  }, []);
+
+  // Initial auto-load if a saved address exists in localStorage.
+  useEffect(() => {
+    const cfg = window.BBB_CONFIG?.get?.() || {};
+    if (cfg.address && window.loadRealData) window.loadRealData();
+  }, []);
 
   // density from tweaks -> body
   useEffect(() => {
@@ -59,8 +80,8 @@ function App() {
   const anchorComp = selected.find(c => c.id === anchorId);
   const arv = useMemo(() => {
     if (!anchorComp) return 0;
-    return Math.round(anchorComp.ppsf * window.SUBJECT.sqft / 500) * 500;
-  }, [anchorComp]);
+    return Math.round(anchorComp.ppsf * subject.sqft / 500) * 500;
+  }, [anchorComp, subject.sqft]);
   const repairTotal = useMemo(() => repairs.reduce((s, i) => s + i.total, 0), [repairs]);
 
   const [offer, setOffer] = useState({
@@ -78,12 +99,14 @@ function App() {
   }, [arv, repairTotal, offer.holdingPct, offer.closingPct, offer.profitPct, offer.wholesale]);
 
   const rentEstimate = useMemo(() => {
-    const avg = window.RENT_COMPS.reduce((s, r) => s + r.rent, 0) / window.RENT_COMPS.length;
-    const psf = (avg / window.SUBJECT.sqft).toFixed(2);
+    const list = window.RENT_COMPS || [];
+    if (list.length === 0) return { rent: 0, psf: '0.00', yield: '0.0', dscr: 0 };
+    const avg = list.reduce((s, r) => s + r.rent, 0) / list.length;
+    const psf = (avg / Math.max(subject.sqft, 1)).toFixed(2);
     const yieldPct = ((avg * 12) / Math.max(offer.offerPrice + repairTotal, 1) * 100).toFixed(1);
     const dscr = avg / 1180; // assumed PITI
     return { rent: Math.round(avg / 25) * 25, psf, yield: yieldPct, dscr };
-  }, [offer.offerPrice, repairTotal]);
+  }, [offer.offerPrice, repairTotal, subject.sqft, dataStatus]);
 
   const toggleSel = (id) => setComps(cs => cs.map(c => c.id === id ? {...c, selected: !c.selected} : c));
   const removeRepair = (id) => setRepairsState(r => r.filter(x => x.id !== id));
@@ -115,7 +138,17 @@ function App() {
           <span style={{color:'var(--ink-300)'}}>/</span>
           <span style={{fontSize: 13, color:'var(--ink-500)'}}>Deals</span>
           <span style={{color:'var(--ink-300)'}}>/</span>
-          <span style={{fontSize: 13, color:'var(--ink-900)', fontWeight: 600}}>1247 Lakewood Dr</span>
+          <span style={{fontSize: 13, color:'var(--ink-900)', fontWeight: 600}}>{subject.address}</span>
+          {dataStatus.loading && (
+            <span style={{fontSize: 11, color: 'var(--ink-500)', display:'inline-flex', alignItems:'center', gap:4}}>
+              <span className="mono">·</span> loading live data…
+            </span>
+          )}
+          {dataStatus.error && (
+            <span style={{fontSize: 11, color: 'var(--red-600)'}} title={dataStatus.error}>
+              · live data failed (using mock)
+            </span>
+          )}
 
           {/* Search */}
           <div style={{flex: 1, maxWidth: 520, marginLeft: 16, position: 'relative'}}>
@@ -134,8 +167,12 @@ function App() {
           <div style={{flex: 1}}/>
 
           <span style={{fontSize: 12, color: 'var(--ink-400)'}}>Created Nov 20, 2025</span>
+          <Btn icon="sliders" size="sm" variant="default" onClick={() => setSettingsOpen(true)}>Settings</Btn>
           <Btn icon="share" size="sm" variant="default">Share</Btn>
-          <Btn icon="sparkle" size="sm" variant="primary">Run AI Underwrite</Btn>
+          <Btn icon="sparkle" size="sm" variant="primary"
+               onClick={() => window.loadRealData && window.loadRealData()}>
+            {dataStatus.loading ? 'Loading…' : 'Run AI Underwrite'}
+          </Btn>
         </div>
 
         {/* Filter row */}
@@ -171,7 +208,7 @@ function App() {
           {view === 'split' && (
             <div style={{display:'grid', gridTemplateColumns: '1fr 380px', gap: 12, height: 'calc(100vh - 168px)', minHeight: 600}}>
               <MapView
-                subject={window.SUBJECT}
+                subject={subject}
                 comps={filtered}
                 hoveredId={hoveredId}
                 selectedId={focusedId}
@@ -213,7 +250,7 @@ function App() {
         {/* Right column */}
         <div style={{display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0,
                      maxHeight: 'calc(100vh - 152px)', overflow: 'auto', paddingRight: 4}}>
-          <SubjectPanel subject={window.SUBJECT}/>
+          <SubjectPanel subject={subject}/>
           <DealPanel
             arv={arv} repairs={repairTotal}
             offer={offer}
@@ -224,7 +261,7 @@ function App() {
             selectedComps={selected}
             anchorId={anchorId}
             onAnchor={setAnchorId}
-            subjectSqft={window.SUBJECT.sqft}
+            subjectSqft={subject.sqft}
           />
           <RepairsPanel items={repairs} onUpdate={()=>{}} onRemove={removeRepair} onAdd={addRepair} density={tweaks.density}/>
         </div>
@@ -234,6 +271,11 @@ function App() {
       <OfferModal open={offerOpen} onClose={() => setOfferOpen(false)}
                   offer={offer} setOffer={setOffer}
                   arv={arv} repairs={repairTotal}/>
+
+      {/* Settings modal */}
+      {window.SettingsModal && (
+        <window.SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)}/>
+      )}
 
       {/* Tweaks */}
       {tweaksOpen && window.TweaksPanel && (
