@@ -205,15 +205,14 @@ const Divider = ({ vertical = false, style = {} }) => (
 const BrickLogo = () => (
   <div style={{display:'flex', alignItems:'center', gap: 8, flexShrink: 0}}>
     <img
-      src="bbb-logo.png"
+      src="./bbb-logo.png"
       alt="brickbybrick AI Real Estate"
       style={{
-        width: 176,
-        height: 42,
-        objectFit: 'cover',
-        objectPosition: '50% 57%',
+        width: 148,
+        height: 26,
+        objectFit: 'contain',
+        objectPosition: 'center',
         display: 'block',
-        borderRadius: 4,
       }}
     />
   </div>
