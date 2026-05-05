@@ -1,0 +1,9 @@
+{
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/BBB/app.html",
+      "permanent": false
+    }
+  ]
+}
