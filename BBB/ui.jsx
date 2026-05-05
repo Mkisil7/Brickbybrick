@@ -204,20 +204,18 @@ const Divider = ({ vertical = false, style = {} }) => (
 
 const BrickLogo = () => (
   <div style={{display:'flex', alignItems:'center', gap: 8, flexShrink: 0}}>
-    <div style={{
-      width: 28, height: 28, borderRadius: 8,
-      background: 'linear-gradient(135deg, #0b1a2b 0%, #1f3349 100%)',
-      display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2,
-      padding: 5, boxShadow: '0 6px 14px rgba(15,30,50,.16)',
-    }} aria-hidden="true">
-      <span style={{background:'#f97316', borderRadius: 2}}/>
-      <span style={{background:'#fbbf24', borderRadius: 2}}/>
-      <span style={{background:'#14b8a6', borderRadius: 2}}/>
-      <span style={{background:'#f97316', borderRadius: 2}}/>
-    </div>
-    <div style={{fontWeight: 800, fontSize: 16, letterSpacing: 0, lineHeight: 1, color: 'var(--ink-900)'}}>
-      brick<span style={{fontWeight: 500, color: 'var(--ink-400)', margin: '0 1px'}}>by</span>brick
-    </div>
+    <img
+      src="bbb-logo.png"
+      alt="brickbybrick AI Real Estate"
+      style={{
+        width: 176,
+        height: 42,
+        objectFit: 'cover',
+        objectPosition: '50% 57%',
+        display: 'block',
+        borderRadius: 4,
+      }}
+    />
   </div>
 );
 
