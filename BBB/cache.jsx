@@ -1,7 +1,7 @@
 // Tiny TTL cache backed by localStorage. Keys are namespaced + versioned so a
 // schema bump invalidates everything by changing CACHE_VERSION.
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE_PREFIX = `bbb:${CACHE_VERSION}:`;
 const DEFAULT_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -28,6 +28,14 @@ window.setCached = (key, value) => {
     localStorage.setItem(CACHE_PREFIX + key, JSON.stringify({ t: Date.now(), v: value }));
   } catch {
     // quota — best effort only
+  }
+};
+
+window.dropCached = (key) => {
+  try {
+    localStorage.removeItem(CACHE_PREFIX + key);
+  } catch {
+    // best effort only
   }
 };
 

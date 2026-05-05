@@ -58,7 +58,15 @@ window.SUBJECT = MOCK_SUBJECT;
 window.COMPS = MOCK_COMPS;
 window.RENT_COMPS = MOCK_RENT_COMPS;
 window.REPAIRS = MOCK_REPAIRS;
-window.DATA_STATUS = { loading: false, source: 'mock', error: null };
+window.DATA_STATUS = {
+  loading: false,
+  source: 'mock',
+  error: null,
+  phase: 'idle',
+  lastUpdated: null,
+  nextRefreshAt: null,
+  refreshMs: 15 * 60 * 1000,
+};
 
 // --- formatters (used everywhere) ---
 window.fmtMoney = (n, opts = {}) => {
@@ -86,34 +94,36 @@ const setStatus = (patch) => {
   announceData();
 };
 
-window.loadRealData = async () => {
+window.loadRealData = async (opts = {}) => {
   const cfg = window.BBB_CONFIG?.get?.() || {};
   const address = (cfg.address || '').trim();
   if (!address) {
-    setStatus({ loading: false, source: 'mock', error: null });
+    setStatus({ loading: false, source: 'mock', error: null, phase: 'idle', nextRefreshAt: null });
     return;
   }
 
-  setStatus({ loading: true, source: 'live', error: null });
+  const refreshMs = opts.refreshMs || window.DATA_STATUS.refreshMs || (15 * 60 * 1000);
+  setStatus({ loading: true, source: 'live', error: null, phase: 'subject', refreshMs });
 
   // Subject: required for everything else.
   let subject;
   try {
-    subject = await window.fetchSubjectAI(address);
+    subject = await window.fetchSubjectAI(address, opts);
     if (!subject?.lat || !subject?.lng) throw new Error('Subject missing coordinates');
     window.SUBJECT = subject;
     announceData();
   } catch (err) {
     console.warn('[bbb] subject fetch failed:', err);
-    setStatus({ loading: false, source: 'mock', error: String(err.message || err) });
+    setStatus({ loading: false, source: 'mock', error: String(err.message || err), phase: 'error' });
     return;
   }
 
   // Comps + rent + repairs in parallel. Each falls back independently.
+  setStatus({ phase: 'market' });
   const [compsRes, rentRes, repairsRes] = await Promise.allSettled([
-    window.fetchCompsAI(subject, 2, 12),
-    window.fetchRentCompsAI(subject, 2),
-    window.fetchRepairsAI(subject, ''),
+    window.fetchCompsAI(subject, 2, 12, opts),
+    window.fetchRentCompsAI(subject, 2, opts),
+    window.fetchRepairsAI(subject, '', opts),
   ]);
 
   if (compsRes.status === 'fulfilled' && compsRes.value.length > 0) {
@@ -137,11 +147,41 @@ window.loadRealData = async () => {
     }
   }
 
-  setStatus({ loading: false, source: 'live', error: null });
+  setStatus({
+    loading: false,
+    source: 'live',
+    error: null,
+    phase: 'ready',
+    lastUpdated: Date.now(),
+    nextRefreshAt: Date.now() + refreshMs,
+  });
 };
+
+window.refreshMarketData = (opts = {}) => window.loadRealData({ ...opts, force: true });
+
+window.startMarketUpdates = (refreshMs = 15 * 60 * 1000) => {
+  if (window.__bbbMarketTimer) clearInterval(window.__bbbMarketTimer);
+  window.DATA_STATUS = { ...window.DATA_STATUS, refreshMs };
+  window.__bbbMarketTimer = setInterval(() => {
+    const cfg = window.BBB_CONFIG?.get?.() || {};
+    if (document.visibilityState === 'visible' && cfg.address && cfg.geminiKey) {
+      window.refreshMarketData({ refreshMs });
+    }
+  }, refreshMs);
+  setStatus({ refreshMs, nextRefreshAt: Date.now() + refreshMs });
+};
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  const status = window.DATA_STATUS || {};
+  const cfg = window.BBB_CONFIG?.get?.() || {};
+  if (cfg.address && cfg.geminiKey && status.nextRefreshAt && Date.now() > status.nextRefreshAt) {
+    window.refreshMarketData({ refreshMs: status.refreshMs });
+  }
+});
 
 // Re-load when settings change. (App.jsx triggers the initial auto-load on
 // mount so it runs after React + listeners are ready.)
 window.addEventListener('bbb:configchanged', () => {
-  window.loadRealData();
+  window.refreshMarketData();
 });

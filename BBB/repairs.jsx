@@ -1,9 +1,11 @@
 // Repair estimator — itemized line items with editable totals + sources
 
-const RepairsPanel = ({ items, onUpdate, onRemove, onAdd, density }) => {
+const RepairsPanel = ({ items, onUpdate, onRemove, onAdd, density, status }) => {
   const total = items.reduce((s, i) => s + (i.total || 0), 0);
   const compact = density === 'compact';
   const [expanded, setExpanded] = React.useState(null);
+  const sqft = Math.max(1, window.SUBJECT?.sqft || 1580);
+  const isLive = status?.source === 'live' && !status?.error;
 
   return (
     <Card style={{padding: 0, overflow:'hidden'}}>
@@ -17,10 +19,13 @@ const RepairsPanel = ({ items, onUpdate, onRemove, onAdd, density }) => {
             <div className="serif" style={{fontSize: 28, color:'var(--red-600)', fontWeight: 500, lineHeight: 1}}>
               {window.fmtMoney(total)}
             </div>
-            <div style={{fontSize: 12, color:'var(--ink-400)'}}>{items.length} items · ${(total / 1580).toFixed(2)}/sqft</div>
+            <div style={{fontSize: 12, color:'var(--ink-400)'}}>{items.length} items · ${(total / sqft).toFixed(2)}/sqft · {isLive ? 'current local data' : 'fallback rates'}</div>
           </div>
         </div>
-        <Btn size="sm" icon="plus" onClick={onAdd}>Add line</Btn>
+        <div style={{display:'flex', alignItems:'center', gap: 8}}>
+          <Btn size="sm" icon="refresh" onClick={() => window.refreshMarketData && window.refreshMarketData()}>{status?.loading ? 'Refreshing' : 'Refresh costs'}</Btn>
+          <Btn size="sm" icon="plus" onClick={onAdd}>Add line</Btn>
+        </div>
       </div>
 
       <div style={{padding: compact ? '4px 0' : '6px 0'}}>
@@ -92,12 +97,12 @@ const RepairsPanel = ({ items, onUpdate, onRemove, onAdd, density }) => {
       <div style={{padding: '12px 16px', background: 'var(--ink-50)', borderTop: '1px solid var(--ink-100)'}}>
         <div style={{fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: .4, color: 'var(--ink-500)', marginBottom: 6, display:'flex', alignItems:'center', gap: 5}}>
           <Icon name="sparkle" size={11}/>
-          Suggestions
+          Market repair model
         </div>
         <div style={{display:'flex', flexDirection:'column', gap: 4, fontSize: 12, color:'var(--ink-700)'}}>
-          <div>· Repairs are <span style={{fontWeight:600}}>$60/sqft</span>, $4 below median for similar Tallahassee flips.</div>
-          <div>· Add new roof? Imagery shows shingles &gt;20 years old. <button style={linkBtn}>Estimate</button></div>
-          <div>· Set the total repair budget cap. <button style={linkBtn}>Configure</button></div>
+          <div>· {isLive ? 'Grounded Gemini Search is pricing the scope from current local contractor and cost-guide results.' : 'Fallback RSMeans-style regional rates are active until a Gemini key and address are saved.'}</div>
+          <div>· Roof, HVAC, electrical, kitchen, bath, flooring, paint, and exterior scope adjust from the subject age, size, and market refresh.</div>
+          <div>· Need the freshest numbers? <button style={linkBtn} onClick={() => window.refreshMarketData && window.refreshMarketData()}>Force refresh</button></div>
         </div>
       </div>
     </Card>

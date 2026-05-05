@@ -175,11 +175,11 @@ Return ONLY a JSON array (no prose, no fences):
 
 const ensureArray = (v) => Array.isArray(v) ? v : [];
 
-window.fetchSubjectAI = async (address) => {
+window.fetchSubjectAI = async (address, opts = {}) => {
   const { geminiKey } = window.BBB_CONFIG.get();
   if (!geminiKey) throw new Error('No Gemini key');
   const cacheKey = `subject:${window.normalizeAddress(address)}`;
-  const cached = window.getCached(cacheKey);
+  const cached = opts.force ? null : window.getCached(cacheKey);
   if (cached) return cached;
 
   const { text, sources } = await callGemini({ key: geminiKey, prompt: SUBJECT_PROMPT(address) });
@@ -209,11 +209,11 @@ window.fetchSubjectAI = async (address) => {
   return out;
 };
 
-window.fetchCompsAI = async (subject, radiusMi = 2, monthsBack = 12) => {
+window.fetchCompsAI = async (subject, radiusMi = 2, monthsBack = 12, opts = {}) => {
   const { geminiKey } = window.BBB_CONFIG.get();
   if (!geminiKey) throw new Error('No Gemini key');
   const cacheKey = `comps:${window.normalizeAddress(subject.address + '|' + subject.city)}:${radiusMi}:${monthsBack}`;
-  const cached = window.getCached(cacheKey);
+  const cached = opts.force ? null : window.getCached(cacheKey, 15 * 60 * 1000);
   if (cached) return cached;
 
   const { text, sources } = await callGemini({ key: geminiKey, prompt: COMPS_PROMPT(subject, radiusMi, monthsBack) });
@@ -253,11 +253,11 @@ window.fetchCompsAI = async (subject, radiusMi = 2, monthsBack = 12) => {
   return arr;
 };
 
-window.fetchRentCompsAI = async (subject, radiusMi = 2) => {
+window.fetchRentCompsAI = async (subject, radiusMi = 2, opts = {}) => {
   const { geminiKey } = window.BBB_CONFIG.get();
   if (!geminiKey) throw new Error('No Gemini key');
   const cacheKey = `rent:${window.normalizeAddress(subject.address + '|' + subject.city)}:${radiusMi}`;
-  const cached = window.getCached(cacheKey);
+  const cached = opts.force ? null : window.getCached(cacheKey, 15 * 60 * 1000);
   if (cached) return cached;
 
   const { text, sources } = await callGemini({ key: geminiKey, prompt: RENT_PROMPT(subject, radiusMi) });
@@ -277,11 +277,11 @@ window.fetchRentCompsAI = async (subject, radiusMi = 2) => {
   return arr;
 };
 
-window.fetchRepairsAI = async (subject, scopeNotes = '') => {
+window.fetchRepairsAI = async (subject, scopeNotes = '', opts = {}) => {
   const { geminiKey } = window.BBB_CONFIG.get();
   if (!geminiKey) throw new Error('No Gemini key');
   const cacheKey = `repairs:${window.normalizeAddress(subject.address + '|' + subject.city)}`;
-  const cached = window.getCached(cacheKey);
+  const cached = opts.force ? null : window.getCached(cacheKey, 60 * 60 * 1000);
   if (cached) return cached;
 
   const { text, sources } = await callGemini({ key: geminiKey, prompt: REPAIRS_PROMPT(subject, scopeNotes), temperature: 0.3 });

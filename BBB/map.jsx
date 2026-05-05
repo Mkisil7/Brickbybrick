@@ -40,7 +40,7 @@ const GoogleMapView = ({ subject, comps, selectedId, hoveredId, onHover, onSelec
       const map = new Map(mapEl.current, {
         center: { lat: subject.lat, lng: subject.lng },
         zoom: 14,
-        mapId: 'BBB_MAP',
+        mapId: 'DEMO_MAP_ID',
         disableDefaultUI: true,
         clickableIcons: false,
         gestureHandling: 'greedy',
@@ -57,8 +57,16 @@ const GoogleMapView = ({ subject, comps, selectedId, hoveredId, onHover, onSelec
   // Re-center when subject changes.
   React.useEffect(() => {
     if (!ready || !mapRef.current) return;
-    mapRef.current.panTo({ lat: subject.lat, lng: subject.lng });
-  }, [ready, subject.lat, subject.lng]);
+    const maps = window.google?.maps;
+    if (!maps || !subject?.lat || !subject?.lng) return;
+    const bounds = new maps.LatLngBounds();
+    bounds.extend({ lat: subject.lat, lng: subject.lng });
+    comps.forEach(c => {
+      if (c.lat && c.lng) bounds.extend({ lat: c.lat, lng: c.lng });
+    });
+    mapRef.current.fitBounds(bounds, 72);
+    if (comps.length === 0) mapRef.current.setZoom(14);
+  }, [ready, subject.lat, subject.lng, comps.map(c => `${c.id}:${c.lat}:${c.lng}`).join('|')]);
 
   // Sync markers with comps + subject.
   React.useEffect(() => {

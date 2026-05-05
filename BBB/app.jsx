@@ -42,6 +42,7 @@ function App() {
   useEffect(() => {
     const cfg = window.BBB_CONFIG?.get?.() || {};
     if (cfg.address && window.loadRealData) window.loadRealData();
+    if (window.startMarketUpdates) window.startMarketUpdates(15 * 60 * 1000);
   }, []);
 
   // density from tweaks -> body
@@ -125,16 +126,7 @@ function App() {
       }}>
         <div style={{padding: '10px 20px', display:'flex', alignItems:'center', gap: 12}}>
           {/* Logo */}
-          <div style={{display:'flex', alignItems:'center', gap: 8, fontWeight: 700, fontSize: 16, letterSpacing: -0.2}}>
-            <div style={{
-              width: 26, height: 26, borderRadius: 7,
-              background: 'linear-gradient(135deg, #1f3349 0%, #4b6478 100%)',
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <Icon name="home" size={14} color="#fff"/>
-            </div>
-            Parcel
-          </div>
+          {window.BrickLogo ? <window.BrickLogo/> : <div style={{fontWeight: 800}}>brick<span style={{color:'var(--ink-400)', fontWeight:500}}>by</span>brick</div>}
           <span style={{color:'var(--ink-300)'}}>/</span>
           <span style={{fontSize: 13, color:'var(--ink-500)'}}>Deals</span>
           <span style={{color:'var(--ink-300)'}}>/</span>
@@ -166,12 +158,12 @@ function App() {
 
           <div style={{flex: 1}}/>
 
-          <span style={{fontSize: 12, color: 'var(--ink-400)'}}>Created Nov 20, 2025</span>
+          <MarketStatus status={dataStatus}/>
           <Btn icon="sliders" size="sm" variant="default" onClick={() => setSettingsOpen(true)}>Settings</Btn>
           <Btn icon="share" size="sm" variant="default">Share</Btn>
           <Btn icon="sparkle" size="sm" variant="primary"
-               onClick={() => window.loadRealData && window.loadRealData()}>
-            {dataStatus.loading ? 'Loading…' : 'Run AI Underwrite'}
+               onClick={() => window.refreshMarketData && window.refreshMarketData()}>
+            {dataStatus.loading ? 'Refreshing…' : 'Refresh Markets'}
           </Btn>
         </div>
 
@@ -224,7 +216,9 @@ function App() {
                   <div style={{fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: .5, color: 'var(--ink-500)'}}>
                     Comparable Properties
                   </div>
-                  <button style={{...iconBtnSmall}} data-tip="Refresh from MLS"><Icon name="refresh" size={13}/></button>
+                  <button style={{...iconBtnSmall}} data-tip="Refresh live comps" onClick={() => window.refreshMarketData && window.refreshMarketData()}>
+                    <Icon name="refresh" size={13}/>
+                  </button>
                 </div>
                 {filtered.map(c => (
                   <CompCard key={c.id} comp={c} onToggle={toggleSel}
@@ -263,7 +257,7 @@ function App() {
             onAnchor={setAnchorId}
             subjectSqft={subject.sqft}
           />
-          <RepairsPanel items={repairs} onUpdate={()=>{}} onRemove={removeRepair} onAdd={addRepair} density={tweaks.density}/>
+          <RepairsPanel items={repairs} onUpdate={()=>{}} onRemove={removeRepair} onAdd={addRepair} density={tweaks.density} status={dataStatus}/>
         </div>
       </main>
 
@@ -337,6 +331,34 @@ const FilterPill = ({ icon, label, options, value, onChange }) => {
           </div>
         </>
       )}
+    </div>
+  );
+};
+
+const MarketStatus = ({ status }) => {
+  const live = status?.source === 'live' && !status?.error;
+  const label = status?.loading
+    ? (status.phase === 'subject' ? 'Loading subject' : 'Refreshing market')
+    : live
+      ? 'Live market'
+      : 'Mock market';
+  const stamp = status?.lastUpdated
+    ? new Date(status.lastUpdated).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+    : null;
+  return (
+    <div style={{
+      display:'inline-flex', alignItems:'center', gap: 7,
+      padding: '5px 9px', borderRadius: 999,
+      border: '1px solid var(--ink-100)', background: '#fff',
+      color: 'var(--ink-500)', fontSize: 11.5, fontWeight: 600,
+    }} title={status?.error || (stamp ? `Last updated ${stamp}` : 'Waiting for a saved address and API keys')}>
+      <span style={{
+        width: 7, height: 7, borderRadius: 99,
+        background: status?.loading ? '#f59e0b' : live ? 'var(--green-600)' : 'var(--ink-300)',
+        boxShadow: live ? '0 0 0 3px rgba(5,150,105,.12)' : 'none',
+      }}/>
+      {label}
+      {stamp && <span style={{color:'var(--ink-400)', fontWeight: 500}}>· {stamp}</span>}
     </div>
   );
 };
